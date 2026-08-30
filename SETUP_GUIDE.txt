@@ -1,0 +1,17 @@
+Fari_RV Daily Routine V2 Cloud
+
+1. In your existing Supabase project, open SQL Editor.
+2. Paste everything from SUPABASE_SETUP.sql and Run it once.
+3. In GitHub repository fari-rv-daily-routine, replace:
+   index.html, manifest.json, service-worker.js, icon-192.png, icon-512.png
+   (SUPABASE_SETUP.sql can also be uploaded, but it is not required by the app.)
+4. Wait for GitHub Pages to redeploy.
+5. Open/reopen the installed app. If an old version is cached, fully close it and reopen after a minute.
+6. Tap Cloud Sync.
+7. Enter the SAME base Project URL and Publishable key you used for the Trading Dashboard.
+8. Use your email/password. You may create a separate routine account or use the same Supabase Auth account.
+9. Sign In, then Sync Now.
+
+The app still includes local auto-save plus Backup/Restore. Cloud sync automatically saves after routine changes while signed in.
+
+IMPORTANT: Never paste your Supabase Secret key. Use the Publishable key only.

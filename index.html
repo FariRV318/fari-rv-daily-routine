@@ -43,14 +43,18 @@ button{cursor:pointer}
   .mobileNav{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;background:#071321;border-top:1px solid #203a53;z-index:100;padding:7px 4px calc(7px + env(safe-area-inset-bottom))}
   .mobileNav button{background:transparent;border:0;color:#aebdce;font-size:9px}.mobileNav span{display:block;font-size:18px;margin-bottom:2px}
 }
-</style>
 
+.cloudStatus{font-size:11px;color:#9fb0c2;margin:8px 0 12px;line-height:1.5}
+.cloudGrid{display:grid;gap:9px}
+.cloudGrid label{font-size:10px;font-weight:800;color:#b9c7d5}
+.cloudGrid .input{margin-top:4px}
+.cloudActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+@media(max-width:760px){.cloudActions .btn{flex:1 1 42%}}
+</style>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fari_RV">
-
 </head>
 <body>
 <div class="app">
@@ -71,7 +75,7 @@ button{cursor:pointer}
 <main class="main" id="top">
   <header class="top">
     <div class="greeting"><h1>Assalamu Alaikum, Fari 💗</h1><p>Stay focused, stay consistent, inshaAllah you will achieve everything.</p></div>
-    <div class="dateBox"><button class="btn" onclick="changeDay(-1)">‹</button><button id="todayLabel" class="btn" onclick="goToday()"></button><button class="btn" onclick="changeDay(1)">›</button></div>
+    <div class="dateBox"><button class="btn green" id="cloudBtn" onclick="openCloud()">☁ Cloud Sync</button><button class="btn" onclick="changeDay(-1)">‹</button><button id="todayLabel" class="btn" onclick="goToday()"></button><button class="btn" onclick="changeDay(1)">›</button></div>
   </header>
 
   <section class="cards">
@@ -145,6 +149,28 @@ button{cursor:pointer}
   <button onclick="scrollToId('progressCard')"><span>▥</span>Stats</button>
   <button onclick="scrollToId('notesCard')"><span>▧</span>Notes</button>
 </nav>
+
+
+<div id="cloudModal" class="modal">
+  <div class="modalBox">
+    <div class="sectionTitle"><h3>☁ Fari_RV Cloud Sync</h3><button class="btn" onclick="closeCloud()">✕</button></div>
+    <div id="cloudStatus" class="cloudStatus">Connect this app to your Supabase project. Use the same account on every device.</div>
+    <div class="cloudGrid">
+      <label>SUPABASE PROJECT URL<input id="sbUrl" class="input" placeholder="https://xxxx.supabase.co"></label>
+      <label>SUPABASE PUBLISHABLE / ANON KEY<input id="sbKey" class="input" placeholder="sb_publishable_..."></label>
+      <label>EMAIL<input id="sbEmail" class="input" type="email" placeholder="you@example.com"></label>
+      <label>PASSWORD<input id="sbPassword" class="input" type="password" placeholder="Password"></label>
+    </div>
+    <div class="cloudActions">
+      <button class="btn primary" onclick="saveConnection()">Save Connection</button>
+      <button class="btn" onclick="createAccount()">Create Account</button>
+      <button class="btn green" onclick="signIn()">Sign In</button>
+      <button class="btn" onclick="syncNow()">Sync Now</button>
+      <button class="btn red" onclick="signOutCloud()">Sign Out</button>
+    </div>
+    <p class="subtitle" style="margin-top:12px">Use only the Project URL ending in <b>.supabase.co</b> — do not add <b>/rest/v1/</b>. Never use a Supabase secret key here.</p>
+  </div>
+</div>
 
 <div id="editorModal" class="modal">
   <div class="modalBox">
@@ -292,17 +318,81 @@ function importBackup(event){
  let f=event.target.files?.[0];if(!f)return;let r=new FileReader();
  r.onload=()=>{try{let b=JSON.parse(r.result);if(!b.tasks||!b.days)throw 0;if(confirm('Restore this routine backup? This will replace current saved data.')){tasks=b.tasks;days=b.days;saveAll();render();alert('Backup restored ✅')}}catch(e){alert('Invalid backup file.')}event.target.value=''};r.readAsText(f)
 }
+
+const CLOUD_CFG_KEY='fari_rv_routine_cloud_cfg_v1';
+let cloudSession=null, cloudBusy=false;
+
+function cloudCfg(){try{return JSON.parse(localStorage.getItem(CLOUD_CFG_KEY)||'{}')}catch(e){return {}}}
+function normalizeUrl(u){return (u||'').trim().replace(/\/+$/,'').replace(/\/rest\/v1$/,'')}
+function setCloudStatus(msg,ok=false){let e=document.getElementById('cloudStatus');if(e){e.textContent=msg;e.style.color=ok?'#86efac':'#9fb0c2'}}
+function openCloud(){
+ const c=cloudCfg();document.getElementById('sbUrl').value=c.url||'';document.getElementById('sbKey').value=c.key||'';document.getElementById('sbEmail').value=c.email||'';
+ document.getElementById('cloudModal').classList.add('show');
+ setCloudStatus(cloudSession?'Signed in ☁️':'Enter your Supabase connection and sign in.');
+}
+function closeCloud(){document.getElementById('cloudModal').classList.remove('show')}
+function saveConnection(){
+ const c={url:normalizeUrl(document.getElementById('sbUrl').value),key:document.getElementById('sbKey').value.trim(),email:document.getElementById('sbEmail').value.trim()};
+ if(!c.url||!c.key){setCloudStatus('Project URL and publishable key are required.');return}
+ localStorage.setItem(CLOUD_CFG_KEY,JSON.stringify(c));setCloudStatus('Connection saved on this device ✅',true)
+}
+async function sbFetch(path,opts={}){
+ const c=cloudCfg();if(!c.url||!c.key)throw new Error('Save your Supabase Project URL and publishable key first.');
+ const headers=Object.assign({'apikey':c.key,'Content-Type':'application/json'},opts.headers||{});
+ if(cloudSession?.access_token)headers['Authorization']='Bearer '+cloudSession.access_token;
+ const r=await fetch(c.url+path,Object.assign({},opts,{headers}));
+ let data=null;try{data=await r.json()}catch(e){}
+ if(!r.ok)throw new Error(data?.msg||data?.message||data?.error_description||data?.error||('Request failed ('+r.status+')'));
+ return data
+}
+async function createAccount(){
+ try{saveConnection();let c=cloudCfg(),password=document.getElementById('sbPassword').value;
+   if(!c.email||!password)throw new Error('Enter email and password.');
+   let d=await sbFetch('/auth/v1/signup',{method:'POST',body:JSON.stringify({email:c.email,password})});
+   if(d.access_token){cloudSession=d;await syncNow();setCloudStatus('Account created and signed in ✅',true)}
+   else setCloudStatus('Account created. Check your email if Supabase requires confirmation, then Sign In. ✅',true)
+ }catch(e){setCloudStatus(e.message)}
+}
+async function signIn(){
+ try{saveConnection();let c=cloudCfg(),password=document.getElementById('sbPassword').value;if(!c.email||!password)throw new Error('Enter email and password.');
+   let d=await sbFetch('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email:c.email,password})});
+   cloudSession=d;document.getElementById('cloudBtn').textContent='☁ Signed In';setCloudStatus('Signed in. Loading your cloud routine…',true);await syncNow()
+ }catch(e){setCloudStatus(e.message)}
+}
+async function signOutCloud(){cloudSession=null;document.getElementById('cloudBtn').textContent='☁ Cloud Sync';setCloudStatus('Signed out.');}
+async function ensureCloudRow(){
+ let rows=await sbFetch('/rest/v1/routine_dashboard?select=id,data&limit=1');
+ return rows?.[0]||null
+}
+async function pushCloud(){
+ if(!cloudSession||cloudBusy)return;cloudBusy=true;
+ try{
+   const payload={tasks,days,updated_at:new Date().toISOString()};
+   let row=await ensureCloudRow();
+   if(row) await sbFetch('/rest/v1/routine_dashboard?id=eq.'+encodeURIComponent(row.id),{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({data:payload})});
+   else await sbFetch('/rest/v1/routine_dashboard',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify({user_id:cloudSession.user.id,data:payload})});
+   setCloudStatus('Cloud saved successfully ☁️✅',true)
+ }finally{cloudBusy=false}
+}
+async function syncNow(){
+ if(!cloudSession){setCloudStatus('Sign in first.');return}
+ try{
+   let row=await ensureCloudRow();
+   if(row?.data){
+     const remote=row.data, localHas=Object.keys(days).length>0, remoteHas=remote.days&&Object.keys(remote.days).length>0;
+     if(remoteHas){tasks=remote.tasks||tasks;days=remote.days||days;saveAllLocal();render();setCloudStatus('Cloud data loaded and synced ☁️✅',true)}
+     else if(localHas){await pushCloud()}
+     else setCloudStatus('Signed in. No routine data yet — start checking tasks and it will sync. ☁️',true)
+   } else await pushCloud()
+ }catch(e){setCloudStatus(e.message)}
+}
+function saveAllLocal(){localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));localStorage.setItem(DAYS_KEY,JSON.stringify(days))}
+const originalSaveAll=saveAll;
+saveAll=function(){saveAllLocal();if(cloudSession&&!cloudBusy){clearTimeout(window._cloudTimer);window._cloudTimer=setTimeout(()=>pushCloud().catch(()=>{}),700)}}
+
 render();
 </script>
-
 <script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js")
-      .catch(err => console.warn("Service worker registration failed:", err));
-  });
-}
-</script>
-
-</body>
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js"))}
+</script></body>
 </html>
