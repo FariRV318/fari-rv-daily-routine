@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07111f">
+<title>Fari_RV Daily Routine Dashboard</title>
+<style>
+:root{
+  --bg:#03101d; --panel:#081828; --panel2:#0b1c2e; --line:#1e3852; --text:#eef4fb;
+  --muted:#8fa2b8; --green:#20d46a; --red:#ef394a; --orange:#ff9f1a; --purple:#8b5cf6;
+  --pink:#ff5f9e; --blue:#3b82f6; --shadow:0 14px 38px rgba(0,0,0,.28);
+}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at 70% 0,#102844 0,#03101d 40%);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+button,input,textarea{font:inherit}
+button{cursor:pointer}
+.app{display:flex;min-height:100vh}
+.side{width:190px;background:#061321;border-right:1px solid var(--line);padding:18px 12px;position:sticky;top:0;height:100vh}
+.logo{font-weight:900;font-size:23px;margin-bottom:3px}.logo span{color:var(--pink)}.subtitle{color:var(--muted);font-size:11px;margin-bottom:20px}
+.nav{display:flex;flex-direction:column;gap:7px}.nav button{border:0;background:transparent;color:#aebccd;padding:10px 12px;text-align:left;border-radius:8px;font-weight:700;font-size:11px}.nav button.active,.nav button:hover{background:linear-gradient(90deg,#6d3bd1,#5320aa);color:#fff}
+.quote{margin-top:24px;border:1px solid var(--line);border-radius:12px;padding:16px;text-align:center;color:#e885ff;font-size:11px;line-height:1.7}
+.main{flex:1;min-width:0;max-width:1500px;margin:auto;padding:20px}
+.top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:14px}.greeting h1{font-size:25px;margin:0}.greeting p{margin:4px 0 0;color:var(--muted);font-size:12px}.dateBox{display:flex;align-items:center;gap:8px}.btn{background:#081727;border:1px solid #2d4763;color:#dfe9f5;padding:8px 11px;border-radius:8px;font-size:11px;font-weight:800}.btn:hover{border-color:#8c61f7}.btn.primary{background:var(--purple);border-color:var(--purple);color:#fff}.btn.green{border-color:#18814a;color:#bfffd8}.btn.red{border-color:#7a2f37;color:#ff9ca4}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.card{background:linear-gradient(145deg,rgba(10,28,46,.98),rgba(6,18,31,.98));border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:15px}
+.metric{display:flex;align-items:center;gap:10px}.metricIcon{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:22px;background:#0b2239}.label{font-size:10px;color:#b4c2d0;font-weight:800}.value{font-size:24px;font-weight:900;margin-top:2px}.green{color:var(--green)}.red{color:var(--red)}.orange{color:var(--orange)}.purple{color:#b187ff}
+.layout{display:grid;grid-template-columns:1.05fr 1fr .62fr;gap:12px}.tasksCard{grid-row:span 2}.sectionTitle{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.sectionTitle h3{margin:0;font-size:15px;color:#b684ff}
+.category{margin-top:13px}.catHead{font-weight:900;font-size:12px;margin-bottom:5px}.spiritual{color:#ff6e9e}.home{color:#ffb42c}.fitness{color:#f9cf3c}.study{color:#ff7c35}.work{color:#7f9cff}.personal{color:#6dd6a0}
+.task{display:grid;grid-template-columns:24px 1fr auto;gap:7px;align-items:center;padding:7px 0;border-bottom:1px solid #162d43}.task:last-child{border-bottom:0}.taskName{font-size:11px}.taskTime{color:#9dafc2;font-size:10px}.check{width:19px;height:19px;border-radius:50%;border:2px solid #5a6d80;background:transparent;color:white;display:grid;place-items:center;padding:0}.check.done{background:var(--green);border-color:var(--green)}.check.done:after{content:"✓";font-weight:900;font-size:12px}
+.calendarHead{display:flex;justify-content:space-between;align-items:center}.calendarHead h3{margin:0;color:#b684ff;font-size:15px}.week,.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.week div{text-align:center;font-size:9px;color:#91a2b6;padding:6px 0}.day{min-height:51px;border:1px solid #1a334a;border-radius:7px;background:#071625;padding:5px;cursor:pointer}.day .dn{font-size:10px;color:#9fb0c2}.day .pct{font-size:10px;font-weight:900;margin-top:7px}.day.greenDay{background:#0c5a31;border-color:#2c9e59}.day.redDay{background:#681723;border-color:#c53f4d}.day.partialDay{background:#5d4110;border-color:#bb7e1e}.day.selected{outline:2px solid #a77cff}.day.empty{opacity:.22;cursor:default}
+.legend{display:flex;justify-content:center;gap:12px;margin-top:9px;font-size:9px;color:#95a7ba}.sq{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px}
+.progressRow{display:grid;grid-template-columns:130px 1fr 42px 48px;gap:8px;align-items:center;margin:10px 0}.progressName{font-size:10px}.bar{height:8px;background:#173046;border-radius:999px;overflow:hidden}.bar i{display:block;height:100%;background:var(--green);border-radius:999px}.progressCount,.progressPct{font-size:10px;text-align:right}.progressPct{border:1px solid #2f704d;border-radius:6px;padding:3px 4px;color:#88e9ae}
+.notes textarea{width:100%;min-height:132px;background:#071727;border:1px solid #2a4560;color:#eaf2fb;border-radius:9px;padding:10px;resize:vertical;outline:none}.notes textarea:focus{border-color:#8b5cf6}.saveNote{margin-top:8px;width:100%}
+.reminder ul{padding-left:18px;margin:9px 0}.reminder li{font-size:10px;color:#b6c3d0;margin:7px 0}.summary p{font-size:10px;color:#aebdcd;margin:9px 0}.ayah{text-align:center;color:#e789ff;font-size:12px;line-height:1.7}
+.actionsBar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.footer{text-align:center;color:#b8c3d0;font-size:11px;margin:18px 0 6px}.footer small{display:block;color:#66798d;margin-top:4px}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:1000;padding:18px}.modal.show{display:flex;align-items:center;justify-content:center}.modalBox{width:min(600px,100%);max-height:90vh;overflow:auto;background:#081828;border:1px solid #294760;border-radius:14px;padding:16px}.modalBox h3{margin:0 0 10px}.editorRow{display:grid;grid-template-columns:1fr 120px 34px;gap:8px;margin-bottom:7px}.input{width:100%;background:#071727;border:1px solid #2a4560;color:#eaf2fb;border-radius:8px;padding:9px;font-size:11px}
+.mobileNav{display:none}
+@media(max-width:1150px){.layout{grid-template-columns:1fr 1fr}.tasksCard{grid-row:auto}.rightCol{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px}}
+@media(max-width:760px){
+  .side{display:none}.main{padding:12px 10px 74px}.top{align-items:flex-start}.greeting h1{font-size:21px}.dateBox{flex-wrap:wrap;justify-content:flex-end}
+  .cards{grid-template-columns:repeat(2,1fr);gap:7px}.layout{grid-template-columns:1fr}.rightCol{grid-column:auto;display:block}.rightCol .card{margin-bottom:12px}
+  .card{padding:12px}.progressRow{grid-template-columns:115px 1fr 36px 42px}.task{grid-template-columns:22px 1fr auto}
+  .mobileNav{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;background:#071321;border-top:1px solid #203a53;z-index:100;padding:7px 4px calc(7px + env(safe-area-inset-bottom))}
+  .mobileNav button{background:transparent;border:0;color:#aebdce;font-size:9px}.mobileNav span{display:block;font-size:18px;margin-bottom:2px}
+}
+</style>
+
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fari_RV">
+
+</head>
+<body>
+<div class="app">
+<aside class="side">
+  <div class="logo">🌸 Fari_RV <span>🌸</span></div>
+  <div class="subtitle">Daily Routine Dashboard</div>
+  <div class="nav">
+    <button class="active" onclick="scrollToId('top')">⌂ &nbsp;Today</button>
+    <button onclick="scrollToId('calendarCard')">▦ &nbsp;Calendar</button>
+    <button onclick="scrollToId('tasksCard')">☑ &nbsp;Tasks</button>
+    <button onclick="scrollToId('progressCard')">▥ &nbsp;Stats</button>
+    <button onclick="scrollToId('notesCard')">▧ &nbsp;Notes</button>
+    <button onclick="openEditor()">⚙ &nbsp;Edit Tasks</button>
+  </div>
+  <div class="quote">“Discipline today<br>Freedom tomorrow”<br><br>💗</div>
+</aside>
+
+<main class="main" id="top">
+  <header class="top">
+    <div class="greeting"><h1>Assalamu Alaikum, Fari 💗</h1><p>Stay focused, stay consistent, inshaAllah you will achieve everything.</p></div>
+    <div class="dateBox"><button class="btn" onclick="changeDay(-1)">‹</button><button id="todayLabel" class="btn" onclick="goToday()"></button><button class="btn" onclick="changeDay(1)">›</button></div>
+  </header>
+
+  <section class="cards">
+    <div class="card"><div class="metric"><div class="metricIcon">☑</div><div><div class="label">TOTAL TASKS</div><div id="totalTasks" class="value">0</div><div class="subtitle">For selected day</div></div></div></div>
+    <div class="card"><div class="metric"><div class="metricIcon">✅</div><div><div class="label">COMPLETED</div><div id="completed" class="value green">0</div><div class="subtitle">Tasks Done</div></div></div></div>
+    <div class="card"><div class="metric"><div class="metricIcon">🕒</div><div><div class="label">PENDING</div><div id="pending" class="value orange">0</div><div class="subtitle">Tasks Left</div></div></div></div>
+    <div class="card"><div class="metric"><div class="metricIcon">🎯</div><div><div class="label">COMPLETION</div><div id="completion" class="value purple">0%</div><div id="completionText" class="subtitle">Let's begin ✨</div></div></div></div>
+  </section>
+
+  <section class="layout">
+    <div class="card tasksCard" id="tasksCard">
+      <div class="sectionTitle"><h3>Today's Tasks</h3><button class="btn" onclick="openEditor()">✎ Edit Tasks</button></div>
+      <div id="taskList"></div>
+      <div class="actionsBar">
+        <button class="btn green" onclick="markAll(true)">✓ Mark All Done</button>
+        <button class="btn red" onclick="markAll(false)">○ Mark All Pending</button>
+        <button class="btn" onclick="resetSelectedDay()">↺ Reset Day</button>
+        <button class="btn" onclick="exportBackup()">💾 Backup</button>
+        <button class="btn" onclick="document.getElementById('backupInput').click()">↥ Restore</button>
+        <input id="backupInput" type="file" accept=".json" hidden onchange="importBackup(event)">
+      </div>
+    </div>
+
+    <div>
+      <div class="card" id="calendarCard">
+        <div class="calendarHead"><h3>Daily Routine Calendar</h3><div><button class="btn" onclick="moveMonth(-1)">‹</button> <span id="monthLabel" style="font-size:11px;font-weight:900;margin:0 8px"></span> <button class="btn" onclick="moveMonth(1)">›</button></div></div>
+        <div class="week"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
+        <div id="calendar" class="calendar"></div>
+        <div class="legend"><span><i class="sq" style="background:#168541"></i>Completed</span><span><i class="sq" style="background:#7f1d2d"></i>Not Completed</span><span><i class="sq" style="background:#8a5a12"></i>Partial</span></div>
+      </div>
+
+      <div class="card" id="progressCard" style="margin-top:12px">
+        <div class="sectionTitle"><h3>Today's Progress by Category</h3></div>
+        <div id="categoryProgress"></div>
+      </div>
+    </div>
+
+    <div class="rightCol">
+      <div class="card notes" id="notesCard">
+        <div class="sectionTitle"><h3>Today's Notes</h3></div>
+        <textarea id="noteText" placeholder="Alhamdulillah for another beautiful day..."></textarea>
+        <button class="btn primary saveNote" onclick="saveNote()">Save Note</button>
+      </div>
+
+      <div class="card reminder">
+        <div class="sectionTitle"><h3 style="color:#ffb42c">🔔 Daily Reminder</h3></div>
+        <ul><li>Pray on time</li><li>Eat healthy</li><li>Keep learning</li><li>Trade with discipline</li><li>Be patient & grateful</li></ul>
+        <div class="green" style="font-size:11px">You've got this! 💪✨</div>
+      </div>
+
+      <div class="card summary">
+        <div class="sectionTitle"><h3>Day Summary</h3></div>
+        <p>🔥 Current complete-day streak: <b id="streakNow">0</b> days</p>
+        <p>🏆 Longest complete-day streak: <b id="streakBest">0</b> days</p>
+        <p>📅 Completed days this month: <b id="monthComplete">0</b></p>
+        <p>📊 Average completion this month: <b id="monthAvg">0%</b></p>
+      </div>
+
+      <div class="card ayah">“Indeed, with hardship comes ease.”<br>— Surah Al-Inshirah (94:6)<br>💗</div>
+    </div>
+  </section>
+
+  <div class="footer">Small steps every day lead to big results. 🌸<small>Fari_RV Daily Routine Dashboard • Auto-saved on this device</small></div>
+</main>
+</div>
+
+<nav class="mobileNav">
+  <button onclick="scrollToId('top')"><span>⌂</span>Today</button>
+  <button onclick="scrollToId('calendarCard')"><span>▦</span>Calendar</button>
+  <button onclick="scrollToId('tasksCard')"><span>☑</span>Tasks</button>
+  <button onclick="scrollToId('progressCard')"><span>▥</span>Stats</button>
+  <button onclick="scrollToId('notesCard')"><span>▧</span>Notes</button>
+</nav>
+
+<div id="editorModal" class="modal">
+  <div class="modalBox">
+    <div class="sectionTitle"><h3>Edit Daily Tasks</h3><button class="btn" onclick="closeEditor()">✕</button></div>
+    <p class="subtitle">Change names/times, remove tasks, or add new ones. These become your default daily routine.</p>
+    <div id="editorRows"></div>
+    <div class="actionsBar"><button class="btn" onclick="addEditorTask()">＋ Add Task</button><button class="btn primary" onclick="saveEditor()">Save Tasks</button></div>
+  </div>
+</div>
+
+<script>
+const TASKS_KEY='fari_rv_routine_tasks_v1', DAYS_KEY='fari_rv_routine_days_v1';
+let defaultTasks=[
+ {id:'fajr',cat:'Spiritual (Namaz)',name:'Fajr Namaz',time:'05:00 AM'},
+ {id:'dhuhr',cat:'Spiritual (Namaz)',name:'Dhuhr Namaz',time:'01:15 PM'},
+ {id:'asr',cat:'Spiritual (Namaz)',name:'Asr Namaz',time:'05:15 PM'},
+ {id:'maghrib',cat:'Spiritual (Namaz)',name:'Maghrib Namaz',time:'06:45 PM'},
+ {id:'isha',cat:'Spiritual (Namaz)',name:'Isha Namaz',time:'08:15 PM'},
+ {id:'tahajjud',cat:'Spiritual (Namaz)',name:'Tahajjud (Optional)',time:'04:30 AM'},
+ {id:'breakfast',cat:'Home & Health',name:'Cook Breakfast',time:'07:30 AM'},
+ {id:'lunch',cat:'Home & Health',name:'Cook Lunch',time:'12:30 PM'},
+ {id:'dinner',cat:'Home & Health',name:'Cook Dinner',time:'07:30 PM'},
+ {id:'cleanup',cat:'Home & Health',name:'Kitchen Clean Up',time:'08:00 PM'},
+ {id:'water',cat:'Home & Health',name:'Drink 8 Glass Water',time:'All Day'},
+ {id:'vitamins',cat:'Home & Health',name:'Vitamins / Supplements',time:'After Food'},
+ {id:'workout',cat:'Health & Fitness',name:'Workout / Exercise',time:'09:00 AM'},
+ {id:'stretch',cat:'Health & Fitness',name:'Stretching / Warm Up',time:'09:30 AM'},
+ {id:'walk',cat:'Health & Fitness',name:'Walk / Steps',time:'06:00 PM'},
+ {id:'french',cat:'Study & Growth',name:'French Study',time:'10:00 AM'},
+ {id:'study',cat:'Study & Growth',name:'Other Study (Books/Skills)',time:'11:30 AM'},
+ {id:'read',cat:'Study & Growth',name:'Read (30 mins)',time:'09:30 PM'},
+ {id:'plan',cat:'Work & Trading',name:'Trading Plan Review',time:'08:30 AM'},
+ {id:'trade',cat:'Work & Trading',name:'Trading (Market Time)',time:'02:00 PM'},
+ {id:'journal',cat:'Work & Trading',name:'Record Trades / Journal',time:'04:30 PM'},
+ {id:'review',cat:'Work & Trading',name:'Review & Analysis',time:'09:00 PM'},
+ {id:'tomorrow',cat:'Personal & Others',name:'Plan Tomorrow',time:'09:45 PM'},
+ {id:'dua',cat:'Personal & Others',name:'Gratitude / Dua',time:'10:00 PM'},
+ {id:'social',cat:'Personal & Others',name:'No Social Media (Limit)',time:'All Day'}
+];
+let tasks=JSON.parse(localStorage.getItem(TASKS_KEY)||'null')||defaultTasks;
+let days=JSON.parse(localStorage.getItem(DAYS_KEY)||'{}');
+let selected=new Date(), calView=new Date();
+
+function pad(n){return String(n).padStart(2,'0')}
+function dkey(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function saveAll(){localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));localStorage.setItem(DAYS_KEY,JSON.stringify(days))}
+function ensureDay(k){if(!days[k])days[k]={done:{},note:''};return days[k]}
+function scrollToId(id){document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'})}
+function catClass(cat){return cat.startsWith('Spiritual')?'spiritual':cat.startsWith('Home')?'home':cat.startsWith('Health')?'fitness':cat.startsWith('Study')?'study':cat.startsWith('Work')?'work':'personal'}
+function categoryIcon(cat){return cat.startsWith('Spiritual')?'🕌':cat.startsWith('Home')?'🍳':cat.startsWith('Health')?'💪':cat.startsWith('Study')?'📚':cat.startsWith('Work')?'📈':'🌐'}
+
+function render(){
+ const k=dkey(selected),day=ensureDay(k);
+ document.getElementById('todayLabel').textContent=selected.toLocaleDateString('en-US',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+ const doneCount=tasks.filter(t=>day.done[t.id]).length,total=tasks.length,pending=total-doneCount,pct=total?Math.round(doneCount/total*100):0;
+ document.getElementById('totalTasks').textContent=total;document.getElementById('completed').textContent=doneCount;document.getElementById('pending').textContent=pending;document.getElementById('completion').textContent=pct+'%';
+ document.getElementById('completionText').textContent=pct===100?'MashaAllah! Perfect day 🎉':pct>=80?'Great progress! 🎉':pct>=50?'Keep going 💪':'Let’s begin ✨';
+ document.getElementById('noteText').value=day.note||'';
+ renderTasks();renderCalendar();renderProgress();renderSummary();saveAll();
+}
+
+function renderTasks(){
+ const k=dkey(selected),day=ensureDay(k),box=document.getElementById('taskList');box.innerHTML='';
+ const cats=[...new Set(tasks.map(t=>t.cat))];
+ cats.forEach(cat=>{
+   let c=document.createElement('div');c.className='category';
+   c.innerHTML='<div class="catHead '+catClass(cat)+'">'+categoryIcon(cat)+' '+cat+'</div>';
+   tasks.filter(t=>t.cat===cat).forEach(t=>{
+     let row=document.createElement('div');row.className='task';
+     row.innerHTML=`<button class="check ${day.done[t.id]?'done':''}" onclick="toggleTask('${t.id}')"></button>
+                    <div class="taskName">${escapeHtml(t.name)}</div><div class="taskTime">${escapeHtml(t.time||'')}</div>`;
+     c.appendChild(row)
+   });box.appendChild(c)
+ })
+}
+function toggleTask(id){let day=ensureDay(dkey(selected));day.done[id]=!day.done[id];saveAll();render()}
+function markAll(v){let day=ensureDay(dkey(selected));tasks.forEach(t=>day.done[t.id]=v);saveAll();render()}
+function resetSelectedDay(){if(confirm('Reset all progress and note for this day?')){days[dkey(selected)]={done:{},note:''};saveAll();render()}}
+function saveNote(){ensureDay(dkey(selected)).note=document.getElementById('noteText').value;saveAll();alert('Note saved ✅')}
+function changeDay(n){selected.setDate(selected.getDate()+n);calView=new Date(selected);render()}
+function goToday(){selected=new Date();calView=new Date();render()}
+function moveMonth(n){calView.setMonth(calView.getMonth()+n);renderCalendar()}
+
+function dayStats(k){
+ let d=days[k]; if(!d)return {done:0,total:tasks.length,pct:0,has:false};
+ let done=tasks.filter(t=>d.done&&d.done[t.id]).length,total=tasks.length,pct=total?Math.round(done/total*100):0;
+ return {done,total,pct,has:Object.keys(d.done||{}).length>0 || !!d.note}
+}
+function renderCalendar(){
+ let y=calView.getFullYear(),m=calView.getMonth(),first=new Date(y,m,1),last=new Date(y,m+1,0),box=document.getElementById('calendar');
+ document.getElementById('monthLabel').textContent=calView.toLocaleString('en-US',{month:'long',year:'numeric'});box.innerHTML='';
+ for(let i=0;i<first.getDay();i++){let e=document.createElement('div');e.className='day empty';box.appendChild(e)}
+ for(let n=1;n<=last.getDate();n++){
+   let d=new Date(y,m,n),k=dkey(d),s=dayStats(k),e=document.createElement('div'),state='';
+   if(s.has){state=s.pct===100?'greenDay':s.pct===0?'redDay':'partialDay'}
+   e.className='day '+state+(k===dkey(selected)?' selected':'');
+   e.innerHTML=`<div class="dn">${n}</div>${s.has?`<div class="pct">${s.pct}%</div>`:''}`;
+   e.onclick=()=>{selected=new Date(y,m,n);render()};box.appendChild(e)
+ }
+}
+
+function renderProgress(){
+ const day=ensureDay(dkey(selected)),box=document.getElementById('categoryProgress');box.innerHTML='';
+ [...new Set(tasks.map(t=>t.cat))].forEach(cat=>{
+   let arr=tasks.filter(t=>t.cat===cat),done=arr.filter(t=>day.done[t.id]).length,pct=arr.length?Math.round(done/arr.length*100):0,row=document.createElement('div');row.className='progressRow';
+   row.innerHTML=`<div class="progressName">${categoryIcon(cat)} ${cat}</div><div class="bar"><i style="width:${pct}%"></i></div><div class="progressCount">${done}/${arr.length}</div><div class="progressPct">${pct}%</div>`;box.appendChild(row)
+ })
+}
+
+function renderSummary(){
+ let keys=Object.keys(days).sort(),best=0,run=0;
+ keys.forEach(k=>{let s=dayStats(k);if(s.pct===100){run++;best=Math.max(best,run)}else run=0});
+ let cur=0,d=new Date(); while(true){let s=dayStats(dkey(d));if(s.pct===100){cur++;d.setDate(d.getDate()-1)}else break}
+ let y=selected.getFullYear(),m=selected.getMonth(),monthKeys=Object.keys(days).filter(k=>{let x=new Date(k+'T00:00:00');return x.getFullYear()===y&&x.getMonth()===m});
+ let vals=monthKeys.map(k=>dayStats(k).pct),complete=vals.filter(v=>v===100).length,avg=vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length):0;
+ document.getElementById('streakNow').textContent=cur;document.getElementById('streakBest').textContent=best;document.getElementById('monthComplete').textContent=complete;document.getElementById('monthAvg').textContent=avg+'%';
+}
+
+function openEditor(){
+ let box=document.getElementById('editorRows');box.innerHTML='';
+ tasks.forEach((t,i)=>addEditorRow(t,i));document.getElementById('editorModal').classList.add('show')
+}
+function closeEditor(){document.getElementById('editorModal').classList.remove('show')}
+function addEditorRow(t={cat:'Personal & Others',name:'New Task',time:''},idx='new'){
+ let row=document.createElement('div');row.className='editorRow';row.dataset.index=idx;
+ row.innerHTML=`<input class="input ename" value="${escapeAttr(t.name)}" placeholder="Task name"><input class="input etime" value="${escapeAttr(t.time||'')}" placeholder="Time"><button class="btn red" onclick="this.parentElement.remove()">×</button>
+ <input class="input ecat" style="grid-column:1/-1" value="${escapeAttr(t.cat||'Personal & Others')}" placeholder="Category">`;document.getElementById('editorRows').appendChild(row)
+}
+function addEditorTask(){addEditorRow()}
+function saveEditor(){
+ let newTasks=[];document.querySelectorAll('#editorRows .editorRow').forEach((r,i)=>{
+   let name=r.querySelector('.ename').value.trim(),time=r.querySelector('.etime').value.trim(),cat=r.querySelector('.ecat').value.trim()||'Personal & Others';
+   if(name){let oldIndex=r.dataset.index,old=(oldIndex!=='new'&&tasks[Number(oldIndex)])?tasks[Number(oldIndex)]:null;newTasks.push({id:old?old.id:'task_'+Date.now()+'_'+i,cat,name,time})}
+ });
+ tasks=newTasks;saveAll();closeEditor();render()
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function escapeAttr(s){return escapeHtml(s).replace(/`/g,'&#096;')}
+
+function exportBackup(){
+ let data={app:'Fari_RV Daily Routine Dashboard',version:'1.0',exportedAt:new Date().toISOString(),tasks,days};
+ let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.download='Fari_RV_Routine_Backup_'+dkey(new Date())+'.json';a.click()
+}
+function importBackup(event){
+ let f=event.target.files?.[0];if(!f)return;let r=new FileReader();
+ r.onload=()=>{try{let b=JSON.parse(r.result);if(!b.tasks||!b.days)throw 0;if(confirm('Restore this routine backup? This will replace current saved data.')){tasks=b.tasks;days=b.days;saveAll();render();alert('Backup restored ✅')}}catch(e){alert('Invalid backup file.')}event.target.value=''};r.readAsText(f)
+}
+render();
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js")
+      .catch(err => console.warn("Service worker registration failed:", err));
+  });
+}
+</script>
+
+</body>
+</html>
