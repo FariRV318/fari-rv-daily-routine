@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#07111f">
-<title>Fari_RV Daily Routine V3 Reminders</title>
+<title>My Daily Routine</title>
 <style>
 :root{
   --bg:#03101d; --panel:#081828; --panel2:#0b1c2e; --line:#1e3852; --text:#eef4fb;
@@ -85,13 +85,46 @@ button{cursor:pointer}
 .toastTitle{font-size:13px;font-weight:900;color:#f3e8ff}.toastMsg{font-size:11px;color:#bfcee0;margin:4px 0 9px}
 @media(max-width:760px){.reminderForm{grid-template-columns:1fr}.reminderForm .full{grid-column:auto}.dayChecks{grid-template-columns:repeat(4,1fr)}}
 
+
+.authGate{position:fixed;inset:0;z-index:3000;background:#03101d;display:flex;align-items:center;justify-content:center;padding:20px}.authGate.hidden{display:none}.authShell{width:min(430px,100%);background:#081727;border:1px solid #29445f;border-radius:20px;padding:24px}.authLogo{text-align:center;font-size:42px}.authShell h1{text-align:center;margin:5px 0}.authTag{text-align:center;color:#91a5bb;font-size:12px;margin-bottom:18px}.authTabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:14px}.authTab{padding:10px;border:0;border-radius:8px;background:#102235;color:#91a5bb;font-weight:900}.authTab.active{background:#7957df;color:white}.authPane{display:none}.authPane.active{display:block}.authField{display:block;font-size:10px;font-weight:900;color:#b7c5d4;margin:10px 0}.authField .input{margin-top:5px;width:100%}.authWide{width:100%}.authMsg{text-align:center;min-height:18px;font-size:10px;color:#ff9da7;margin-top:9px}.authMsg.ok{color:#6ee7a0}.authLink{background:none;border:0;color:#bca8ff;font-size:10px;font-weight:900}.creator{text-align:center;color:#71879d;font-size:9px;margin-top:18px}.creator b{color:#bca8ff}
 </style>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Fari_RV">
+
+<script>
+/* My Daily Routine — public Supabase client configuration.
+   The publishable key is safe for frontend use. Never place a secret/service-role key here. */
+(function () {
+  const PUBLIC_SUPABASE_URL = 'https://hbvtnzcoranwctfggraj.supabase.co';
+  const PUBLIC_SUPABASE_KEY = 'sb_publishable_9hoA3bVLyLlMwRGM08ZD9Q_RvTFXeFp';
+  try {
+    if (!localStorage.getItem('fari_rv_sb_url')) localStorage.setItem('fari_rv_sb_url', PUBLIC_SUPABASE_URL);
+    if (!localStorage.getItem('fari_rv_sb_key')) localStorage.setItem('fari_rv_sb_key', PUBLIC_SUPABASE_KEY);
+  } catch (e) {}
+})();
+</script>
+
 </head>
 <body>
+
+<div id="authGate" class="authGate"><div class="authShell">
+<div class="authLogo">🌸</div><h1>My Daily Routine</h1><div class="authTag">Plan your day. Build better habits.</div>
+<div class="authTabs"><button id="tabSignIn" class="authTab active" onclick="showAuthTab('signin')">SIGN IN</button><button id="tabCreate" class="authTab" onclick="showAuthTab('create')">CREATE ACCOUNT</button></div>
+<div id="paneSignIn" class="authPane active">
+<label class="authField">EMAIL<input id="loginEmail" class="input" type="email" placeholder="you@example.com"></label>
+<label class="authField">PASSWORD<input id="loginPassword" class="input" type="password" placeholder="Your password"></label>
+<button class="btn primary authWide" onclick="publicSignIn()">SIGN IN</button>
+<div style="text-align:center"><button class="authLink" onclick="forgotPassword()">Forgot password?</button></div></div>
+<div id="paneCreate" class="authPane">
+<label class="authField">YOUR NAME<input id="createName" class="input" placeholder="Your name"></label>
+<label class="authField">EMAIL<input id="createEmail" class="input" type="email" placeholder="you@example.com"></label>
+<label class="authField">PASSWORD<input id="createPassword" class="input" type="password" placeholder="Minimum 6 characters"></label>
+<label class="authField">CONFIRM PASSWORD<input id="createPassword2" class="input" type="password" placeholder="Repeat password"></label>
+<button class="btn primary authWide" onclick="publicCreateAccount()">CREATE MY ACCOUNT</button></div>
+<div id="publicAuthMsg" class="authMsg"></div><div class="creator">My Daily Routine • <b>Made by Fari_RV 👑</b></div>
+</div></div>
 <div class="app">
 <aside class="side">
   <div class="logo">🌸 Fari_RV <span>🌸</span></div>
@@ -179,7 +212,7 @@ button{cursor:pointer}
     </div>
   </section>
 
-  <div class="footer">Small steps every day lead to big results. 🌸<small>Fari_RV Daily Routine Dashboard • Auto-saved on this device</small></div>
+  <div class="footer">Small steps every day lead to big results. 🌸<small>My Daily Routine • Made by Fari_RV 👑 • Private cloud sync</small></div>
 </main>
 </div>
 
@@ -419,7 +452,7 @@ function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':
 function escapeAttr(s){return escapeHtml(s).replace(/`/g,'&#096;')}
 
 function exportBackup(){
- let data={app:'Fari_RV Daily Routine Dashboard',version:'3.0',exportedAt:new Date().toISOString(),tasks,days,reminders};
+ let data={app:'My Daily Routine',version:'3.0',exportedAt:new Date().toISOString(),tasks,days,reminders};
  let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.download='Fari_RV_Routine_Backup_'+dkey(new Date())+'.json';a.click()
 }
 function importBackup(event){
@@ -427,6 +460,19 @@ function importBackup(event){
  r.onload=()=>{try{let b=JSON.parse(r.result);if(!b.tasks||!b.days)throw 0;if(confirm('Restore this routine backup? This will replace current saved data.')){tasks=b.tasks;days=b.days;reminders=b.reminders||reminders;saveAll();render();alert('Backup restored ✅')}}catch(e){alert('Invalid backup file.')}event.target.value=''};r.readAsText(f)
 }
 
+
+
+function showAuthTab(w){let s=w==='signin';document.getElementById('tabSignIn').classList.toggle('active',s);document.getElementById('tabCreate').classList.toggle('active',!s);document.getElementById('paneSignIn').classList.toggle('active',s);document.getElementById('paneCreate').classList.toggle('active',!s);authMsg('')}
+function authMsg(m,ok=false){let e=document.getElementById('publicAuthMsg');e.textContent=m||'';e.className='authMsg'+(ok?' ok':'')}
+function pubCfg(){return{
+url:'https://hbvtnzcoranwctfggraj.supabase.co',
+key:'sb_publishable_9hoA3bVLyLlMwRGM08ZD9Q_RvTFXeFp'
+}}
+function needCfg(){let c=pubCfg();if(!c.url||!c.key){authMsg('Owner setup required: connect Supabase first.');return null}return c}
+async function publicSignIn(){let c=needCfg();if(!c)return;let email=loginEmail.value.trim(),password=loginPassword.value;if(!email||!password)return authMsg('Enter email and password.');try{let r=await fetch(c.url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:c.key,'Content-Type':'application/json'},body:JSON.stringify({email,password})});let d=await r.json();if(!r.ok)throw Error(d.msg||d.error_description||d.message||'Sign in failed');saveSession(d);cloudUser=d.user;await loadCloudData();authGate.classList.add('hidden');updateCloudStatus()}catch(e){authMsg(e.message)}}
+async function publicCreateAccount(){let c=needCfg();if(!c)return;let name=createName.value.trim(),email=createEmail.value.trim(),p=createPassword.value,p2=createPassword2.value;if(!name||!email||!p)return authMsg('Complete all fields.');if(p.length<6)return authMsg('Password needs at least 6 characters.');if(p!==p2)return authMsg('Passwords do not match.');try{let r=await fetch(c.url+'/auth/v1/signup',{method:'POST',headers:{apikey:c.key,'Content-Type':'application/json'},body:JSON.stringify({email,password:p,data:{display_name:name}})});let d=await r.json();if(!r.ok)throw Error(d.msg||d.message||'Could not create account');if(d.access_token){saveSession(d);cloudUser=d.user;await pushCloudData();authGate.classList.add('hidden')}else{showAuthTab('signin');loginEmail.value=email;authMsg('Account created. Check your email to confirm, then sign in.',true)}}catch(e){authMsg(e.message)}}
+async function forgotPassword(){let c=needCfg();if(!c)return;let email=loginEmail.value.trim();if(!email)return authMsg('Enter your email first.');try{let r=await fetch(c.url+'/auth/v1/recover',{method:'POST',headers:{apikey:c.key,'Content-Type':'application/json'},body:JSON.stringify({email})});if(!r.ok)throw Error('Could not send reset email');authMsg('Password reset email sent.',true)}catch(e){authMsg(e.message)}}
+async function publicBootstrap(){let c=pubCfg();if(!c.url||!c.key)return;try{await restoreCloudSession();if(cloudUser)authGate.classList.add('hidden')}catch(e){}}
 
 /* ===== V3 REMINDER ENGINE ===== */
 const WEEK=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -644,7 +690,7 @@ const originalSaveAll=saveAll;
 saveAll=function(){saveAllLocal();if(cloudSession&&!cloudBusy){clearTimeout(window._cloudTimer);window._cloudTimer=setTimeout(()=>pushCloud().catch(()=>{}),700)}}
 
 render();
-startReminderEngine();
+startReminderEngine();setTimeout(publicBootstrap,0);
 </script>
 <script>
 if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js"))}

@@ -1,6 +1,6 @@
 {
-  "name": "Fari_RV Daily Routine",
-  "short_name": "Fari_RV Routine",
+  "name": "My Daily Routine",
+  "short_name": "Daily Routine",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#03101d",
