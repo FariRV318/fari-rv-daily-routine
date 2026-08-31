@@ -123,7 +123,7 @@ button{cursor:pointer}
 <label class="authField">PASSWORD<input id="createPassword" class="input" type="password" placeholder="Minimum 6 characters"></label>
 <label class="authField">CONFIRM PASSWORD<input id="createPassword2" class="input" type="password" placeholder="Repeat password"></label>
 <button class="btn primary authWide" onclick="publicCreateAccount()">CREATE MY ACCOUNT</button></div>
-<div id="publicAuthMsg" class="authMsg"></div><div class="creator">My Daily Routine • <b>Made by Fari_RV 👑</b></div>
+<div id="publicAuthMsg" class="authMsg"></div><div class="creator">My Daily Routine • <b>Made by Fari_RV 👑</b> • <strong>v4.4</strong></div>
 </div></div>
 <div class="app">
 <aside class="side">
@@ -143,7 +143,7 @@ button{cursor:pointer}
 
 <main class="main" id="top">
   <header class="top">
-    <div class="greeting"><h1>Assalamu Alaikum, Fari 💗</h1><p>Stay focused, stay consistent, inshaAllah you will achieve everything.</p></div>
+    <div class="greeting"><h1>Assalamu Alaikum, <span id="greetingUserName">User</span> 💗</h1><p>Stay focused, stay consistent, inshaAllah you will achieve everything.</p></div>
     <div class="dateBox"><button class="btn green" id="cloudBtn" onclick="openCloud()">☁ Cloud Sync</button><button class="btn" onclick="changeDay(-1)">‹</button><button id="todayLabel" class="btn" onclick="goToday()"></button><button class="btn" onclick="changeDay(1)">›</button></div>
   </header>
 
@@ -212,7 +212,7 @@ button{cursor:pointer}
     </div>
   </section>
 
-  <div class="footer">Small steps every day lead to big results. 🌸<small>My Daily Routine • Made by Fari_RV 👑 • v4.2</small></div>
+  <div class="footer">Small steps every day lead to big results. 🌸<small>My Daily Routine • Made by Fari_RV 👑 • v4.4</small></div>
 </main>
 </div>
 
@@ -227,22 +227,24 @@ button{cursor:pointer}
 
 <div id="cloudModal" class="modal">
   <div class="modalBox">
-    <div class="sectionTitle"><h3>☁ Fari_RV Cloud Sync</h3><button class="btn" onclick="closeCloud()">✕</button></div>
-    <div id="cloudStatus" class="cloudStatus">Connect this app to your Supabase project. Use the same account on every device.</div>
-    <div class="cloudGrid">
-      <label>SUPABASE PROJECT URL<input id="sbUrl" class="input" placeholder="https://xxxx.supabase.co"></label>
-      <label>SUPABASE PUBLISHABLE / ANON KEY<input id="sbKey" class="input" placeholder="sb_publishable_..."></label>
-      <label>EMAIL<input id="sbEmail" class="input" type="email" placeholder="you@example.com"></label>
-      <label>PASSWORD<input id="sbPassword" class="input" type="password" placeholder="Password"></label>
+    <div class="sectionTitle">
+      <h3>👤 My Account</h3>
+      <button class="btn" onclick="closeCloud()">✕</button>
     </div>
-    <div class="cloudActions">
-      <button class="btn primary" onclick="saveConnection()">Save Connection</button>
-      <button class="btn" onclick="createAccount()">Create Account</button>
-      <button class="btn green" onclick="signIn()">Sign In</button>
-      <button class="btn" onclick="syncNow()">Sync Now</button><button class="btn" onclick="publicSignOut()">Sign Out</button>
-      <button class="btn red" onclick="signOutCloud()">Sign Out</button>
+    <div id="cloudStatus" class="cloudStatus">Signed in securely</div>
+    <div class="accountCard" style="margin-top:14px;padding:16px;border:1px solid #28445f;border-radius:12px;background:#071624">
+      <div style="font-size:10px;color:#8fa6bc;margin-bottom:5px">NAME</div>
+      <div id="accountName" style="font-weight:900;font-size:16px;margin-bottom:14px">User</div>
+      <div style="font-size:10px;color:#8fa6bc;margin-bottom:5px">EMAIL</div>
+      <div id="accountEmail" style="font-weight:800;font-size:12px;word-break:break-all">—</div>
     </div>
-    <p class="subtitle" style="margin-top:12px">Use only the Project URL ending in <b>.supabase.co</b> — do not add <b>/rest/v1/</b>. Never use a Supabase secret key here.</p>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn green" onclick="syncNow()">☁ Sync Now</button>
+      <button class="btn danger" onclick="publicSignOut()">Sign Out</button>
+    </div>
+    <div style="font-size:10px;color:#7f95aa;margin-top:12px">
+      Your routine data is private to your account.
+    </div>
   </div>
 </div>
 
@@ -504,6 +506,31 @@ async function publicApi(path,opts={}){
   if(!r.ok)throw new Error(d?.msg||d?.message||d?.error_description||d?.error||('Request failed ('+r.status+')'));
   return d;
 }
+
+function getCurrentPublicUser(){
+  return cloudSession?.user || null;
+}
+function getCurrentDisplayName(){
+  const u=getCurrentPublicUser();
+  const meta=u?.user_metadata||{};
+  const raw=(meta.display_name||meta.full_name||meta.name||'').trim();
+  if(raw) return raw;
+  if(u?.email) return u.email.split('@')[0];
+  return 'User';
+}
+function applyPublicUserProfile(){
+  const u=getCurrentPublicUser();
+  const name=getCurrentDisplayName();
+  const side=document.getElementById('sidebarUserName');
+  const greet=document.getElementById('greetingUserName');
+  const accName=document.getElementById('accountName');
+  const accEmail=document.getElementById('accountEmail');
+  if(side) side.textContent=name;
+  if(greet) greet.textContent=name;
+  if(accName) accName.textContent=name;
+  if(accEmail) accEmail.textContent=u?.email||'—';
+}
+
 async function publicSignIn(){
   const email=document.getElementById('loginEmail').value.trim();
   const password=document.getElementById('loginPassword').value;
@@ -516,6 +543,7 @@ async function publicSignIn(){
     });
     savePublicSession(d);
     document.getElementById('cloudBtn').textContent='☁ Signed In';
+    applyPublicUserProfile();
     await syncNow();
     document.getElementById('authGate').classList.add('hidden');
     authMsg('');
@@ -539,6 +567,7 @@ async function publicCreateAccount(){
     if(d?.access_token){
       savePublicSession(d);
       document.getElementById('cloudBtn').textContent='☁ Signed In';
+      applyPublicUserProfile();
       await syncNow();
       document.getElementById('authGate').classList.add('hidden');
       authMsg('');
@@ -578,6 +607,7 @@ async function publicBootstrap(){
     const user=await publicApi('/auth/v1/user');
     if(!user?.id)throw new Error('Session expired');
     document.getElementById('cloudBtn').textContent='☁ Signed In';
+    applyPublicUserProfile();
     document.getElementById('authGate').classList.add('hidden');
     await syncNow();
   }catch(e){
@@ -604,207 +634,23 @@ async function enableNotifications(){
 async function showBrowserNotification(title,body){
   if(!('Notification' in window)||Notification.permission!=='granted')return;
   try{
-    if('serviceWorker' in navigator){
-      const reg=await navigator.serviceWorker.ready;
-      if(reg&&reg.showNotification){await reg.showNotification(title,{body,icon:'icon-192.png',badge:'icon-192.png',tag:'fari-rv-reminder'});return}
-    }
-    new Notification(title,{body,icon:'icon-192.png'});
-  }catch(e){}
-}
-function reminderDaysText(days){
-  const d=(days||[]).slice().sort((a,b)=>a-b);
-  if(d.length===7)return 'Every day';
-  if(d.join(',')==='1,2,3,4,5')return 'Mon–Fri';
-  if(d.join(',')==='0,6')return 'Weekends';
-  return d.map(x=>WEEK[x]).join(', ')||'No days';
-}
-function formatTime24(t){
-  if(!t)return '--:--';
-  const [h,m]=t.split(':').map(Number);const d=new Date();d.setHours(h,m,0,0);
-  return d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-}
-function openReminderEditor(id=null){
-  reminderEditId=id;
-  const r=id?reminders.find(x=>x.id===id):null;
-  document.getElementById('reminderModalTitle').textContent=r?'🔔 Edit Reminder':'🔔 Add Reminder';
-  document.getElementById('remName').value=r?.name||'';
-  document.getElementById('remTime').value=r?.time||'';
-  document.getElementById('remBefore').value=String(r?.before??0);
-  document.getElementById('remMessage').value=r?.message||'';
-  document.getElementById('remSnooze').value=String(r?.snooze??10);
-  document.querySelectorAll('.remDay').forEach(c=>c.checked=(r?.days||[0,1,2,3,4,5,6]).includes(Number(c.value)));
-  document.getElementById('reminderModal').classList.add('show');
-}
-function closeReminderEditor(){document.getElementById('reminderModal').classList.remove('show');reminderEditId=null}
-function saveReminder(){
-  const name=document.getElementById('remName').value.trim();
-  const time=document.getElementById('remTime').value;
-  const days=[...document.querySelectorAll('.remDay:checked')].map(c=>Number(c.value));
-  if(!name){alert('Please enter a reminder name.');return}
-  if(!time){alert('Please select a reminder time.');return}
-  if(!days.length){alert('Please select at least one repeat day.');return}
-  const obj={
-    id:reminderEditId||('rem_'+Date.now()),
-    name,time,
-    before:Number(document.getElementById('remBefore').value)||0,
-    message:document.getElementById('remMessage').value.trim()||('Time for '+name+' 🔔'),
-    days,enabled:reminderEditId?(reminders.find(x=>x.id===reminderEditId)?.enabled??true):true,
-    snooze:Number(document.getElementById('remSnooze').value)||10
-  };
-  if(reminderEditId){const i=reminders.findIndex(x=>x.id===reminderEditId);if(i>=0)reminders[i]=obj}
-  else reminders.push(obj);
-  saveAll();closeReminderEditor();renderReminders();startReminderEngine();
-}
-function deleteReminder(id){
-  const r=reminders.find(x=>x.id===id);if(!r)return;
-  if(confirm('Delete reminder "'+r.name+'"?')){reminders=reminders.filter(x=>x.id!==id);saveAll();renderReminders()}
-}
-function toggleReminder(id,on){
-  const r=reminders.find(x=>x.id===id);if(!r)return;r.enabled=!!on;saveAll();renderReminders();startReminderEngine();
-}
-function nextReminderOccurrence(r,from=new Date()){
-  if(!r.enabled||!r.time||!r.days?.length)return null;
-  const [hh,mm]=r.time.split(':').map(Number);
-  for(let add=0;add<8;add++){
-    const d=new Date(from);d.setDate(from.getDate()+add);d.setHours(hh,mm,0,0);d.setMinutes(d.getMinutes()-Number(r.before||0));
-    if(r.days.includes(d.getDay())&&d>from)return d;
-  }
-  return null;
-}
-function renderReminders(){
-  notificationPermissionText();
-  const box=document.getElementById('reminderList');if(!box)return;box.innerHTML='';
-  if(!reminders.length)box.innerHTML='<div class="reminderStatus">No reminders yet. Tap “Add Reminder” to create one.</div>';
-  reminders.slice().sort((a,b)=>(a.time||'').localeCompare(b.time||'')).forEach(r=>{
-    const el=document.createElement('div');el.className='reminderItem '+(r.enabled?'':'off');
-    el.innerHTML=`<div class="reminderItemTop"><div><div class="reminderName">${escapeHtml(r.name)}</div><div class="reminderMeta">⏰ ${formatTime24(r.time)}${r.before?` • ${r.before} min before`:''}<br>📅 ${escapeHtml(reminderDaysText(r.days))}<br>💬 ${escapeHtml(r.message||'')}</div></div><label class="switch" aria-label="Toggle reminder"><input type="checkbox" ${r.enabled?'checked':''} onchange="toggleReminder('${r.id}',this.checked)"><span class="slider"></span></label></div><div class="reminderActions"><button class="miniBtn" onclick="openReminderEditor('${r.id}')">✎ Edit</button><button class="miniBtn" onclick="testReminder('${r.id}')">🔔 Test</button><button class="miniBtn" onclick="deleteReminder('${r.id}')">🗑 Delete</button></div>`;
-    box.appendChild(el);
-  });
-  renderUpcomingReminders();
-}
-function renderUpcomingReminders(){
-  const box=document.getElementById('upcomingReminders');if(!box)return;
-  const now=new Date(),list=reminders.map(r=>({r,d:nextReminderOccurrence(r,now)})).filter(x=>x.d).sort((a,b)=>a.d-b.d).slice(0,4);
-  box.innerHTML='<div class="upcomingTitle">NEXT REMINDERS</div>';
-  if(!list.length){box.innerHTML+='<div class="reminderStatus">No active reminders scheduled.</div>';return}
-  list.forEach(x=>{
-    const label=x.d.toDateString()===now.toDateString()?'Today':x.d.toLocaleDateString('en-US',{weekday:'short',day:'numeric',month:'short'});
-    box.innerHTML+=`<div class="upcomingRow"><span>${escapeHtml(x.r.name)}</span><b>${label} • ${formatTime24(x.d.getHours()+':'+String(x.d.getMinutes()).padStart(2,'0'))}</b></div>`;
-  });
-}
-function playReminderSound(){
-  try{
-    const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
-    const c=new C(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.value=.12;o.start();setTimeout(()=>{o.stop();c.close()},450);
-  }catch(e){}
-}
-async function fireReminder(r){
-  activeReminder=r;playReminderSound();
-  document.getElementById('toastTitle').textContent='🔔 '+r.name;
-  document.getElementById('toastMessage').textContent=r.message||('Time for '+r.name);
-  document.getElementById('reminderToast').classList.add('show');
-  await showBrowserNotification('🔔 '+r.name,r.message||('Time for '+r.name));
-}
-function dismissReminderToast(){document.getElementById('reminderToast').classList.remove('show');activeReminder=null}
-function snoozeCurrentReminder(){
-  if(!activeReminder)return;const r={...activeReminder},mins=Number(r.snooze||10);dismissReminderToast();
-  setTimeout(()=>fireReminder(r),mins*60000);
-  alert('Snoozed for '+mins+' minutes ⏰');
-}
-function testReminder(id){const r=reminders.find(x=>x.id===id);if(r)fireReminder(r)}
-function reminderCheck(){
-  const now=new Date();
-  reminders.filter(r=>r.enabled).forEach(r=>{
-    const [hh,mm]=(r.time||'').split(':').map(Number);if(Number.isNaN(hh)||Number.isNaN(mm))return;
-    const target=new Date(now);target.setHours(hh,mm,0,0);target.setMinutes(target.getMinutes()-Number(r.before||0));
-    const key=r.id+'_'+dkey(now)+'_'+target.getHours()+':'+target.getMinutes();
-    if(r.days.includes(now.getDay())&&Math.abs(now-target)<45000&&!reminderLastFired[key]){
-      reminderLastFired[key]=true;fireReminder(r);
-    }
-  });
-  renderUpcomingReminders();
-}
-function startReminderEngine(){
-  if(reminderTimer)clearInterval(reminderTimer);
-  reminderCheck();reminderTimer=setInterval(reminderCheck,30000);
-}
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)reminderCheck()});
-
-const CLOUD_CFG_KEY='fari_rv_routine_cloud_cfg_v1';
-let cloudSession=null, cloudBusy=false;
-
-function cloudCfg(){try{return JSON.parse(localStorage.getItem(CLOUD_CFG_KEY)||'{}')}catch(e){return {}}}
-function normalizeUrl(u){return (u||'').trim().replace(/\/+$/,'').replace(/\/rest\/v1$/,'')}
-function setCloudStatus(msg,ok=false){let e=document.getElementById('cloudStatus');if(e){e.textContent=msg;e.style.color=ok?'#86efac':'#9fb0c2'}}
-function openCloud(){
- const c=cloudCfg();document.getElementById('sbUrl').value=c.url||'';document.getElementById('sbKey').value=c.key||'';document.getElementById('sbEmail').value=c.email||'';
- document.getElementById('cloudModal').classList.add('show');
- setCloudStatus(cloudSession?'Signed in ☁️':'Enter your Supabase connection and sign in.');
-}
-function closeCloud(){document.getElementById('cloudModal').classList.remove('show')}
-function saveConnection(){
- const c={url:normalizeUrl(document.getElementById('sbUrl').value),key:document.getElementById('sbKey').value.trim(),email:document.getElementById('sbEmail').value.trim()};
- if(!c.url||!c.key){setCloudStatus('Project URL and publishable key are required.');return}
- localStorage.setItem(CLOUD_CFG_KEY,JSON.stringify(c));setCloudStatus('Connection saved on this device ✅',true)
-}
-async function sbFetch(path,opts={}){
- const c=cloudCfg();if(!c.url||!c.key)throw new Error('Save your Supabase Project URL and publishable key first.');
- const headers=Object.assign({'apikey':c.key,'Content-Type':'application/json'},opts.headers||{});
- if(cloudSession?.access_token)headers['Authorization']='Bearer '+cloudSession.access_token;
- const r=await fetch(c.url+path,Object.assign({},opts,{headers}));
- let data=null;try{data=await r.json()}catch(e){}
- if(!r.ok)throw new Error(data?.msg||data?.message||data?.error_description||data?.error||('Request failed ('+r.status+')'));
- return data
-}
-async function createAccount(){
- try{saveConnection();let c=cloudCfg(),password=document.getElementById('sbPassword').value;
-   if(!c.email||!password)throw new Error('Enter email and password.');
-   let d=await sbFetch('/auth/v1/signup',{method:'POST',body:JSON.stringify({email:c.email,password})});
-   if(d.access_token){cloudSession=d;await syncNow();setCloudStatus('Account created and signed in ✅',true)}
-   else setCloudStatus('Account created. Check your email if Supabase requires confirmation, then Sign In. ✅',true)
- }catch(e){setCloudStatus(e.message)}
-}
-async function signIn(){
- try{saveConnection();let c=cloudCfg(),password=document.getElementById('sbPassword').value;if(!c.email||!password)throw new Error('Enter email and password.');
-   let d=await sbFetch('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email:c.email,password})});
-   cloudSession=d;document.getElementById('cloudBtn').textContent='☁ Signed In';setCloudStatus('Signed in. Loading your cloud routine…',true);await syncNow()
- }catch(e){setCloudStatus(e.message)}
-}
-async function signOutCloud(){await publicSignOut();setCloudStatus('Signed out.');}
-async function ensureCloudRow(){
- let rows=await sbFetch('/rest/v1/routine_dashboard?select=id,data&limit=1');
- return rows?.[0]||null
-}
-async function pushCloud(){
- if(!cloudSession||cloudBusy)return;cloudBusy=true;
- try{
-   const payload={tasks,days,reminders,updated_at:new Date().toISOString()};
-   let row=await ensureCloudRow();
-   if(row) await sbFetch('/rest/v1/routine_dashboard?id=eq.'+encodeURIComponent(row.id),{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({data:payload})});
-   else await sbFetch('/rest/v1/routine_dashboard',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify({user_id:cloudSession.user.id,data:payload})});
-   setCloudStatus('Cloud saved successfully ☁️✅',true)
- }finally{cloudBusy=false}
-}
-async function syncNow(){
- if(!cloudSession){setCloudStatus('Sign in first.');return}
- try{
-   let row=await ensureCloudRow();
-   if(row?.data){
-     const remote=row.data, localHas=Object.keys(days).length>0, remoteHas=remote.days&&Object.keys(remote.days).length>0;
-     if(remoteHas){tasks=remote.tasks||tasks;days=remote.days||days;reminders=remote.reminders||reminders;saveAllLocal();render();setCloudStatus('Cloud data loaded and synced ☁️✅',true)}
-     else if(localHas){await pushCloud()}
-     else setCloudStatus('Signed in. No routine data yet — start checking tasks and it will sync. ☁️',true)
-   } else await pushCloud()
- }catch(e){setCloudStatus(e.message)}
-}
-function saveAllLocal(){localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));localStorage.setItem(DAYS_KEY,JSON.stringify(days));localStorage.setItem(REMINDERS_KEY,JSON.stringify(reminders))}
-const originalSaveAll=saveAll;
-saveAll=function(){saveAllLocal();if(cloudSession&&!cloudBusy){clearTimeout(window._cloudTimer);window._cloudTimer=setTimeout(()=>pushCloud().catch(()=>{}),700)}}
-
-render();
-startReminderEngine();setTimeout(publicBootstrap,0);
+    
 </script>
 <script>
-if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js"))}
-</script></body>
+/* V4.3 clean deployment: remove legacy PWA workers/caches that may serve old login code. */
+window.addEventListener('load', async () => {
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+  } catch (e) {}
+});
+</script>
+
+</body>
 </html>
