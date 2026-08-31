@@ -239,7 +239,7 @@ button{cursor:pointer}
       <button class="btn primary" onclick="saveConnection()">Save Connection</button>
       <button class="btn" onclick="createAccount()">Create Account</button>
       <button class="btn green" onclick="signIn()">Sign In</button>
-      <button class="btn" onclick="syncNow()">Sync Now</button>
+      <button class="btn" onclick="syncNow()">Sync Now</button><button class="btn" onclick="publicSignOut()">Sign Out</button>
       <button class="btn red" onclick="signOutCloud()">Sign Out</button>
     </div>
     <p class="subtitle" style="margin-top:12px">Use only the Project URL ending in <b>.supabase.co</b> — do not add <b>/rest/v1/</b>. Never use a Supabase secret key here.</p>
@@ -462,17 +462,129 @@ function importBackup(event){
 
 
 
-function showAuthTab(w){let s=w==='signin';document.getElementById('tabSignIn').classList.toggle('active',s);document.getElementById('tabCreate').classList.toggle('active',!s);document.getElementById('paneSignIn').classList.toggle('active',s);document.getElementById('paneCreate').classList.toggle('active',!s);authMsg('')}
-function authMsg(m,ok=false){let e=document.getElementById('publicAuthMsg');e.textContent=m||'';e.className='authMsg'+(ok?' ok':'')}
-function pubCfg(){return{
-url:'https://hbvtnzcoranwctfggraj.supabase.co',
-key:'sb_publishable_9hoA3bVLyLlMwRGM08ZD9Q_RvTFXeFp'
-}}
-function needCfg(){let c=pubCfg();if(!c.url||!c.key){authMsg('Owner setup required: connect Supabase first.');return null}return c}
-async function publicSignIn(){let c=needCfg();if(!c)return;let email=loginEmail.value.trim(),password=loginPassword.value;if(!email||!password)return authMsg('Enter email and password.');try{let r=await fetch(c.url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:c.key,'Content-Type':'application/json'},body:JSON.stringify({email,password})});let d=await r.json();if(!r.ok)throw Error(d.msg||d.error_description||d.message||'Sign in failed');saveSession(d);cloudUser=d.user;await loadCloudData();authGate.classList.add('hidden');updateCloudStatus()}catch(e){authMsg(e.message)}}
-async function publicCreateAccount(){let c=needCfg();if(!c)return;let name=createName.value.trim(),email=createEmail.value.trim(),p=createPassword.value,p2=createPassword2.value;if(!name||!email||!p)return authMsg('Complete all fields.');if(p.length<6)return authMsg('Password needs at least 6 characters.');if(p!==p2)return authMsg('Passwords do not match.');try{let r=await fetch(c.url+'/auth/v1/signup',{method:'POST',headers:{apikey:c.key,'Content-Type':'application/json'},body:JSON.stringify({email,password:p,data:{display_name:name}})});let d=await r.json();if(!r.ok)throw Error(d.msg||d.message||'Could not create account');if(d.access_token){saveSession(d);cloudUser=d.user;await pushCloudData();authGate.classList.add('hidden')}else{showAuthTab('signin');loginEmail.value=email;authMsg('Account created. Check your email to confirm, then sign in.',true)}}catch(e){authMsg(e.message)}}
-async function forgotPassword(){let c=needCfg();if(!c)return;let email=loginEmail.value.trim();if(!email)return authMsg('Enter your email first.');try{let r=await fetch(c.url+'/auth/v1/recover',{method:'POST',headers:{apikey:c.key,'Content-Type':'application/json'},body:JSON.stringify({email})});if(!r.ok)throw Error('Could not send reset email');authMsg('Password reset email sent.',true)}catch(e){authMsg(e.message)}}
-async function publicBootstrap(){let c=pubCfg();if(!c.url||!c.key)return;try{await restoreCloudSession();if(cloudUser)authGate.classList.add('hidden')}catch(e){}}
+
+const PUBLIC_SB_URL='https://hbvtnzcoranwctfggraj.supabase.co';
+const PUBLIC_SB_KEY='sb_publishable_9hoA3bVLyLlMwRGM08ZD9Q_RvTFXeFp';
+const PUBLIC_SESSION_KEY='my_daily_routine_session_v4';
+
+function showAuthTab(w){
+  const s=w==='signin';
+  document.getElementById('tabSignIn').classList.toggle('active',s);
+  document.getElementById('tabCreate').classList.toggle('active',!s);
+  document.getElementById('paneSignIn').classList.toggle('active',s);
+  document.getElementById('paneCreate').classList.toggle('active',!s);
+  authMsg('');
+}
+function authMsg(m,ok=false){
+  const e=document.getElementById('publicAuthMsg');
+  if(!e)return;
+  e.textContent=m||'';
+  e.className='authMsg'+(ok?' ok':'');
+}
+function pubCfg(){return {url:PUBLIC_SB_URL,key:PUBLIC_SB_KEY}}
+function seedPublicCloudConfig(email=''){
+  localStorage.setItem('fari_rv_routine_cloud_cfg_v1',JSON.stringify({
+    url:PUBLIC_SB_URL,key:PUBLIC_SB_KEY,email:email||''
+  }));
+}
+function savePublicSession(s){
+  if(!s)return;
+  cloudSession=s;
+  localStorage.setItem(PUBLIC_SESSION_KEY,JSON.stringify(s));
+}
+function clearPublicSession(){
+  cloudSession=null;
+  localStorage.removeItem(PUBLIC_SESSION_KEY);
+}
+async function publicApi(path,opts={}){
+  const headers=Object.assign({'apikey':PUBLIC_SB_KEY,'Content-Type':'application/json'},opts.headers||{});
+  if(cloudSession?.access_token)headers.Authorization='Bearer '+cloudSession.access_token;
+  const r=await fetch(PUBLIC_SB_URL+path,Object.assign({},opts,{headers}));
+  let d=null; try{d=await r.json()}catch(e){}
+  if(!r.ok)throw new Error(d?.msg||d?.message||d?.error_description||d?.error||('Request failed ('+r.status+')'));
+  return d;
+}
+async function publicSignIn(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const password=document.getElementById('loginPassword').value;
+  if(!email||!password){authMsg('Enter email and password.');return}
+  authMsg('Signing in…');
+  try{
+    seedPublicCloudConfig(email);
+    const d=await publicApi('/auth/v1/token?grant_type=password',{
+      method:'POST',body:JSON.stringify({email,password})
+    });
+    savePublicSession(d);
+    document.getElementById('cloudBtn').textContent='☁ Signed In';
+    await syncNow();
+    document.getElementById('authGate').classList.add('hidden');
+    authMsg('');
+  }catch(e){authMsg(e.message)}
+}
+async function publicCreateAccount(){
+  const name=document.getElementById('createName').value.trim();
+  const email=document.getElementById('createEmail').value.trim();
+  const p=document.getElementById('createPassword').value;
+  const p2=document.getElementById('createPassword2').value;
+  if(!name||!email||!p){authMsg('Complete all fields.');return}
+  if(p.length<6){authMsg('Password needs at least 6 characters.');return}
+  if(p!==p2){authMsg('Passwords do not match.');return}
+  authMsg('Creating account…');
+  try{
+    seedPublicCloudConfig(email);
+    const d=await publicApi('/auth/v1/signup',{
+      method:'POST',
+      body:JSON.stringify({email,password:p,data:{display_name:name}})
+    });
+    if(d?.access_token){
+      savePublicSession(d);
+      document.getElementById('cloudBtn').textContent='☁ Signed In';
+      await syncNow();
+      document.getElementById('authGate').classList.add('hidden');
+      authMsg('');
+    }else{
+      showAuthTab('signin');
+      document.getElementById('loginEmail').value=email;
+      authMsg('Account created. Check your email to confirm it, then sign in.',true);
+    }
+  }catch(e){authMsg(e.message)}
+}
+async function forgotPassword(){
+  const email=document.getElementById('loginEmail').value.trim();
+  if(!email){authMsg('Enter your email first.');return}
+  try{
+    await publicApi('/auth/v1/recover',{method:'POST',body:JSON.stringify({email})});
+    authMsg('Password reset email sent.',true);
+  }catch(e){authMsg(e.message)}
+}
+async function publicSignOut(){
+  try{
+    if(cloudSession?.access_token){
+      await publicApi('/auth/v1/logout',{method:'POST'});
+    }
+  }catch(e){}
+  clearPublicSession();
+  document.getElementById('cloudBtn').textContent='☁ Cloud Sync';
+  document.getElementById('authGate').classList.remove('hidden');
+  showAuthTab('signin');
+}
+async function publicBootstrap(){
+  seedPublicCloudConfig();
+  try{
+    const saved=JSON.parse(localStorage.getItem(PUBLIC_SESSION_KEY)||'null');
+    if(!saved?.access_token)return;
+    cloudSession=saved;
+    // Validate session against Supabase.
+    const user=await publicApi('/auth/v1/user');
+    if(!user?.id)throw new Error('Session expired');
+    document.getElementById('cloudBtn').textContent='☁ Signed In';
+    document.getElementById('authGate').classList.add('hidden');
+    await syncNow();
+  }catch(e){
+    clearPublicSession();
+    document.getElementById('authGate').classList.remove('hidden');
+  }
+}
 
 /* ===== V3 REMINDER ENGINE ===== */
 const WEEK=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -658,7 +770,7 @@ async function signIn(){
    cloudSession=d;document.getElementById('cloudBtn').textContent='☁ Signed In';setCloudStatus('Signed in. Loading your cloud routine…',true);await syncNow()
  }catch(e){setCloudStatus(e.message)}
 }
-async function signOutCloud(){cloudSession=null;document.getElementById('cloudBtn').textContent='☁ Cloud Sync';setCloudStatus('Signed out.');}
+async function signOutCloud(){await publicSignOut();setCloudStatus('Signed out.');}
 async function ensureCloudRow(){
  let rows=await sbFetch('/rest/v1/routine_dashboard?select=id,data&limit=1');
  return rows?.[0]||null
